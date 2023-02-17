@@ -25,7 +25,7 @@ class Loader {
     if (status) {
       return showDialog(
         context: context,
-        barrierDismissible: true,
+        barrierDismissible: false,
         builder: (BuildContext context) => const Center(
           child: CircularProgressIndicator(color: AppColors.primaryColor),
         ),

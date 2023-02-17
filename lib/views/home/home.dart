@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -249,15 +250,21 @@ class _HomeState extends State<Home> {
                                           decoration: BoxDecoration(
                                             color: Color(0xFFE6F2EA),
                                             borderRadius: BorderRadius.all(
-                                                Radius.circular(100.0)),
+                                                Radius.circular(100.0)
+                                            ),
                                           ),
                                           padding: EdgeInsets.all(10.0),
-                                          child: Image.network(
-                                            Urls.imageUrl +
-                                                categorieslist![index]
-                                                    .image
-                                                    .toString(),
+                                          child:
+                                          /*Image.network(
+                                            Urls.imageUrl + categorieslist![index].image.toString(),
                                             width: 32.0,
+                                          ),*/
+                                          // Image.asset('assets/icons/spinner.gif',width: 32.0,),
+                                          CachedNetworkImage(
+                                            imageUrl: Urls.imageUrl + categorieslist![index].image.toString(),
+                                            width: 32.0,
+                                            placeholder: (context, url) => Center(child: Image.asset('assets/icons/spinner.gif')),
+                                            errorWidget: (context, url, error) => Icon(Icons.error),
                                           ),
                                         ),
                                         Text(
@@ -362,12 +369,15 @@ class _HomeState extends State<Home> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Image.network(
-                                  Urls.imageUrl +
-                                      featurevendorlist![index]
-                                          .image
-                                          .toString(),
+                                /*Image.network(
+                                  Urls.imageUrl + featurevendorlist![index].image.toString(),
                                   height: 91.6,
+                                ),*/
+                                CachedNetworkImage(
+                                  imageUrl: Urls.imageUrl + featurevendorlist![index].image.toString(),
+                                  height: 91.6,
+                                  placeholder: (context, url) => Center(child: Image.asset('assets/icons/spinner.gif',width: 40.0,)),
+                                  errorWidget: (context, url, error) => Icon(Icons.error),
                                 ),
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,

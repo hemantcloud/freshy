@@ -2,38 +2,15 @@
 
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:freshy/models/register_model.dart';
-import 'package:freshy/views/authentication/register.dart';
 import 'package:freshy/views/dashboard.dart';
 import 'package:freshy/views/utilities/app_colors.dart';
 import 'package:freshy/views/utilities/toast.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-// apis
-import 'dart:io';
-import 'dart:async';
-import 'dart:convert' as convert;
-import 'package:pretty_http_logger/pretty_http_logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
-import 'package:freshy/views/utilities/custom_loader.dart';
-import 'package:freshy/views/utilities/toast.dart';
-import 'package:freshy/views/utilities/urls.dart';
-// apis
 
 class VerifyRegister extends StatefulWidget {
-  String name;
-  String email;
-  String countryCode;
-  String phone;
-  String deviceType;
-  String deviceId;
-  String fcmToken;
-  VerifyRegister({Key? key,required this.name,required this.email,required this.countryCode,required this.phone,required this.deviceType,required this.deviceId,required this.fcmToken}) : super(key: key);
+  const VerifyRegister({Key? key}) : super(key: key);
 
   @override
   State<VerifyRegister> createState() => _VerifyRegisterState();
@@ -42,7 +19,6 @@ class VerifyRegister extends StatefulWidget {
 class _VerifyRegisterState extends State<VerifyRegister> {
   TextEditingController otpController = TextEditingController();
   StreamController<ErrorAnimationType>? errorController;
-  String? code;
 
   @override
   Widget build(BuildContext context) {
@@ -123,10 +99,7 @@ class _VerifyRegisterState extends State<VerifyRegister> {
                   errorAnimationController: errorController,
                   controller: otpController,
                   keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    code = value;
-                    print(value);
-                  },
+                  onChanged: (value) {},
                   beforeTextPaste: (text) {
                     debugPrint("Allowing to paste $text");
                     return true;
@@ -149,25 +122,23 @@ class _VerifyRegisterState extends State<VerifyRegister> {
                   ],
                 ),
                 child: InkWell(
-                  onTap: () async {
+                  onTap: () {
                     String otp = otpController.text;
                     if (otp.isEmpty) {
                       UtilityToaster().getToast("Please Enter Otp.");
                     } else if (otp.length < 6 || otp.length > 6) {
                       UtilityToaster().getToast("Please Enter Valid Otp.");
                     } else {
-                      try{
-                        FirebaseAuth auth = FirebaseAuth.instance;
-                        // Create a PhoneAuthCredential with the code
-                        PhoneAuthCredential credential = PhoneAuthProvider.credential(verificationId: Register.verify.toString(), smsCode: code.toString());
-
-                        // Sign the user in (or link) with the credential
-                        await auth.signInWithCredential(credential);
-                        register(context);
-                      }catch(e){
-                        print('error is -----------$e');
-                        UtilityToaster().getToast('Something went wrong');
-                      }
+                      Navigator.pushReplacement(
+                        context,
+                        PageTransition(
+                          type: PageTransitionType.rightToLeftWithFade,
+                          alignment: Alignment.topCenter,
+                          duration: Duration(milliseconds: 1000),
+                          isIos: true,
+                          child: Dashboard(bottomIndex: 0),
+                        ),
+                      );
                     }
                   },
                   child: Align(
@@ -209,49 +180,5 @@ class _VerifyRegisterState extends State<VerifyRegister> {
         ),
       ),
     );
-  }
-  Future<void> register(BuildContext context) async {
-    Loader.ProgressloadingDialog(context, true);
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var request = {};
-    request['name'] = widget.name;
-    request['email'] = widget.email;
-    request['country_code'] = widget.countryCode;
-    request['phone'] = widget.phone;
-    request['device'] = widget.deviceType;
-    request['device_id'] = widget.deviceId;
-    request['fcm_token'] = widget.fcmToken;
-    HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
-      HttpLogger(logLevel: LogLevel.BODY),
-    ]);
-    var response = await http.post(Uri.parse(Urls.registerUrl),
-        body: convert.jsonEncode(request),
-        headers: {
-          "content-type": "application/json",
-          "accept": "application/json",
-        });
-    Map<String, dynamic> jsonResponse = convert.jsonDecode(response.body);
-    Loader.ProgressloadingDialog(context, false);
-    RegisterModel responseRegister = await RegisterModel.fromJson(jsonResponse);
-    if(responseRegister.status == true){
-      UtilityToaster().getToast(responseRegister.message);
-      prefs.setString('auth_token', responseRegister.data!.token.toString());
-      prefs.setBool('isLogin', true);
-      Navigator.pushReplacement(
-        context,
-        PageTransition(
-          type: PageTransitionType.rightToLeftWithFade,
-          alignment: Alignment.topCenter,
-          duration: Duration(milliseconds: 1000),
-          isIos: true,
-          child: Dashboard(bottomIndex: 0),
-        ),
-      );
-      setState(() {});
-    }else{
-      UtilityToaster().getToast(responseRegister.message);
-      setState(() {});
-    }
-    return;
   }
 }

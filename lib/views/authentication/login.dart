@@ -204,15 +204,26 @@ class _LoginState extends State<Login> {
                       }else{
                         countryCodeApi = countrycodecontroller.text;
                       }
+                      Loader.ProgressloadingDialog(context, true);
                       FirebaseAuth auth = FirebaseAuth.instance;
+
                       await auth.verifyPhoneNumber(
                         phoneNumber: '$countryCodeApi${phoneController.text}',
                         verificationCompleted: (PhoneAuthCredential credential) async {
+                          // ANDROID ONLY!
+
+                          // Sign the user in (or link) with the auto-generated credential
                           await auth.signInWithCredential(credential);
                         },
-                        verificationFailed: (FirebaseAuthException error) { print('error is ------------$error'); },
+                        verificationFailed: (FirebaseAuthException error) {
+                          Loader.ProgressloadingDialog(context, false);
+                          UtilityToaster().getToast(error);
+                          print('error is ------------$error');
+                        },
                         codeSent: (String verificationId, int? forceResendingToken) {
                           Login.verify = verificationId;
+                          Loader.ProgressloadingDialog(context, false);
+                          UtilityToaster().getToast("OTP has been sent to your mobile number.");
                           Navigator.pushReplacement(
                             context,
                             PageTransition(
@@ -229,7 +240,6 @@ class _LoginState extends State<Login> {
                               ),
                             ),
                           );
-                          UtilityToaster().getToast("OTP has been sent to your mobile number.");
                         },
                         codeAutoRetrievalTimeout: (String verificationId) {  },
                       );
@@ -347,7 +357,7 @@ class _LoginState extends State<Login> {
       });
     } else if (Platform.isAndroid) {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      print('Android - Running on ${androidInfo.id}'); // e.g. "Moto G (4)"
+      /*print('Android - Running on ${androidInfo.id}'); // e.g. "Moto G (4)"
       print('androidInfo.model -------${androidInfo.model}');
       print('androidInfo.type -------${androidInfo.type}');
       print('androidInfo.device -------${androidInfo.device}');
@@ -361,7 +371,7 @@ class _LoginState extends State<Login> {
       print('androidInfo.isPhysicalDevice -------${androidInfo.isPhysicalDevice}');
       print('androidInfo.manufacturer -------${androidInfo.manufacturer}');
       print('androidInfo.product -------${androidInfo.product}');
-      print('androidInfo.tags -------${androidInfo.tags}');
+      print('androidInfo.tags -------${androidInfo.tags}');*/
       deviceid = androidInfo.hardware;
       devicetype = 'android';
       setState(() {

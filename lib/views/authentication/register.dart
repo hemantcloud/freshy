@@ -1,7 +1,6 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
 
 import 'package:country_picker/country_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -26,7 +25,6 @@ import 'package:freshy/views/utilities/urls.dart';
 
 class Register extends StatefulWidget {
   const Register({Key? key}) : super(key: key);
-  static String? verify;
 
   @override
   State<Register> createState() => _RegisterState();
@@ -116,7 +114,7 @@ class _RegisterState extends State<Register> {
                       child: TextFormField(
                         // textAlignVertical: TextAlignVertical.bottom,
                         controller: nameController,
-                        keyboardType: TextInputType.name,
+                        keyboardType: TextInputType.emailAddress,
                         style: const TextStyle(
                           fontSize: 14.0,
                           // fontFamily: 'Poppins',
@@ -287,7 +285,7 @@ class _RegisterState extends State<Register> {
                   ],
                 ),
                 child: InkWell(
-                  onTap: () async {
+                  onTap: () {
                     String name = nameController.text;
                     String email = emailController.text;
                     String phone = phoneController.text;
@@ -308,38 +306,7 @@ class _RegisterState extends State<Register> {
                       }else{
                         countryCodeApi = countrycodecontroller.text;
                       }
-                      FirebaseAuth auth = FirebaseAuth.instance;
-                      await auth.verifyPhoneNumber(
-                        phoneNumber: '$countryCodeApi${phoneController.text}',
-                        verificationCompleted: (PhoneAuthCredential credential) async {
-                          await auth.signInWithCredential(credential);
-                        },
-                        verificationFailed: (FirebaseAuthException error) { print('error is ------------$error'); },
-                        codeSent: (String verificationId, int? forceResendingToken) {
-                          Register.verify = verificationId;
-                          Navigator.pushReplacement(
-                            context,
-                            PageTransition(
-                              type: PageTransitionType.rightToLeftWithFade,
-                              alignment: Alignment.topCenter,
-                              duration: Duration(milliseconds: 1000),
-                              isIos: true,
-                              child: VerifyRegister(
-                                name: nameController.text,
-                                email: emailController.text,
-                                countryCode: countryCodeApi.toString(),
-                                phone: phoneController.text,
-                                deviceType: devicetype,
-                                deviceId: deviceid,
-                                fcmToken: 'fcm_token'
-                              ),
-                            ),
-                          );
-                          print('$countryCodeApi${phoneController.text} is ---------------------$countryCodeApi${phoneController.text}');
-                          UtilityToaster().getToast("OTP has been sent to your mobile number.");
-                        },
-                        codeAutoRetrievalTimeout: (String verificationId) {  },
-                      );
+                      register(context, countryCodeApi);
                     }
                   },
                   child: Align(
@@ -357,27 +324,71 @@ class _RegisterState extends State<Register> {
               Container(
                 padding: EdgeInsets.only(top: 21.0),
                 alignment: Alignment.center,
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(text: 'Already have an account ? '),
-                      TextSpan(
-                        text: 'Login',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                        recognizer: new TapGestureRecognizer()
-                          ..onTap = () => {
-                            Navigator.pop(context)
-                          },
-                      ),
-                    ],
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: 'Already have an account ? '),
+                        TextSpan(
+                          text: 'Login',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                          recognizer: new TapGestureRecognizer()
+                            ..onTap = () => {
+                              Navigator.pop(context)
+                            },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+  Future<void> register(BuildContext context, String countryCodeApi) async {
+    Loader.ProgressloadingDialog(context, true);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var request = {};
+    request['name'] = nameController.text;
+    request['email'] = emailController.text;
+    request['country_code'] = countryCodeApi;
+    request['phone'] = phoneController.text;
+    request['device'] = devicetype;
+    request['device_id'] = deviceid;
+    request['fcm_token'] = 'fcm_token';
+    HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
+      HttpLogger(logLevel: LogLevel.BODY),
+    ]);
+    var response = await http.post(Uri.parse(Urls.registerUrl),
+        body: convert.jsonEncode(request),
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json",
+        });
+    Map<String, dynamic> jsonResponse = convert.jsonDecode(response.body);
+    Loader.ProgressloadingDialog(context, false);
+    RegisterModel responseRegister = await RegisterModel.fromJson(jsonResponse);
+    if(responseRegister.status == true){
+      UtilityToaster().getToast(responseRegister.message);
+      prefs.setString('auth_token', responseRegister.data!.token.toString());
+      prefs.setBool('isLogin', true);
+      Navigator.pushReplacement(
+          context,
+          PageTransition(
+            type: PageTransitionType.rightToLeftWithFade,
+            alignment: Alignment.topCenter,
+            duration: Duration(milliseconds: 1000),
+            isIos: true,
+            child: Dashboard(bottomIndex: 0),
+          ),
+        );
+      setState(() {});
+    }else{
+      UtilityToaster().getToast(responseRegister.message);
+      setState(() {});
+    }
+    return;
   }
   /// loads device info
   void loadInfo() async {
@@ -400,7 +411,7 @@ class _RegisterState extends State<Register> {
       });
     } else if (Platform.isAndroid) {
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      print('Android - Running on ${androidInfo.id}'); // e.g. "Moto G (4)"
+      /*print('Android - Running on ${androidInfo.id}'); // e.g. "Moto G (4)"
       print('androidInfo.model -------${androidInfo.model}');
       print('androidInfo.type -------${androidInfo.type}');
       print('androidInfo.device -------${androidInfo.device}');
@@ -414,7 +425,7 @@ class _RegisterState extends State<Register> {
       print('androidInfo.isPhysicalDevice -------${androidInfo.isPhysicalDevice}');
       print('androidInfo.manufacturer -------${androidInfo.manufacturer}');
       print('androidInfo.product -------${androidInfo.product}');
-      print('androidInfo.tags -------${androidInfo.tags}');
+      print('androidInfo.tags -------${androidInfo.tags}');*/
       deviceid = androidInfo.id;
       devicetype = 'android';
       setState(() {

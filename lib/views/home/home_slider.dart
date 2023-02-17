@@ -5,6 +5,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:freshy/models/home_model.dart';
 import 'package:freshy/views/utilities/app_colors.dart';
 import 'package:freshy/views/utilities/urls.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeSlider extends StatefulWidget {
   List<BannerModel>? imgList;
@@ -23,11 +24,19 @@ class _HomeSliderState extends State<HomeSlider> {
     final List<Widget> imageSliders = widget.imgList!
         .map((item) => Stack(
               children: [
-                Image.network(
+                /*Image.network(
                   Urls.imageUrl + item.image.toString(),
                   fit: BoxFit.cover,
                   width: MediaQuery.of(context).size.width,
                   height: 283.0,
+                ),*/
+                CachedNetworkImage(
+                  imageUrl: Urls.imageUrl + item.image.toString(),
+                  width: MediaQuery.of(context).size.width,
+                  height: 283.0,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Center(child: Image.asset('assets/icons/spinner.gif',width: 64.0,)),
+                  errorWidget: (context, url, error) => Icon(Icons.error),
                 ),
                 Positioned(
                   bottom: 40.0,
